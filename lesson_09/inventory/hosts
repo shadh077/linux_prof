@@ -1,0 +1,10 @@
+[nfsserver]
+nfss ansible_host=127.0.0.1 ansible_port=2222
+
+[nfsclient]
+nfsc ansible_host=127.0.0.1 ansible_port=2200
+
+[nfsserver:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/lesson_09/.vagrant/machines/nfss/virtualbox/private_key
+[nfsclient:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/lesson_09/.vagrant/machines/nfsc/virtualbox/private_key

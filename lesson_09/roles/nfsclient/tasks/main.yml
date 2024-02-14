@@ -1,0 +1,29 @@
+---
+- name: install package
+  ansible.builtin.yum:
+    name: nfs-utils
+    state: latest
+  tags:
+    - nfs-package
+    - package
+- name: start and enable firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+  tags:
+    - firewalld-enable
+- name: add fstab enteries
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    backup: true
+    line: 192.168.56.10:/srv/share/ /mnt nfs vers=3,proto=udp,noauto,x-systemd.automount 0 0
+  tags:
+    - fstab
+- name: reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+- name: restart remote targets
+  ansible.builtin.systemd:
+     name: remote-fs.target
+     state: restarted

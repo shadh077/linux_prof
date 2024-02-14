@@ -1,0 +1,57 @@
+---
+- name: install package
+  ansible.builtin.yum:
+    name: nfs-utils
+    state: latest
+  tags:
+    - nfs-package
+    - package
+- name: start and enable NFS
+  ansible.builtin.systemd:
+    name: nfs
+    state: started
+    enabled: yes
+  tags:
+    - nfs-enable
+- name: start and enable firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+  tags:
+    - firewalld-enable
+- name: allow access to NFS services
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+  loop:
+    - nfs3
+    - rpc-bind
+    - mountd
+  notify:
+    - reload firewalld
+- name: create a share directory
+  ansible.builtin.file:
+    path: /srv/share/upload
+    state: directory
+    mode: 0777
+    owner: nfsnobody
+    group: nfsnobody
+  tags:
+    - directory
+- name: create test file
+  ansible.builtin.file:
+    path: /srv/share/upload/check_file
+    state: touch
+    mode: 0777
+    owner: nfsnobody
+    group: nfsnobody
+- name: create config for access control
+  template:
+    src: exports
+    dest: /etc/exports
+  tags:
+    - nfs-exports
+- name: export share
+  command: exportfs -r
