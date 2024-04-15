@@ -3,6 +3,8 @@
 - переписан init-скрипт запуска spawn-fcgi на systemd unit
 - запуск 2х экземпляров httpd, с разными конфигурационными файлами
 
+Клонировать репозиторий и выполнить vagrant up из каталога с уроком.
+
 Для наблюдения результа, нужно зайти в виртуалку командой vagrant ssh и выполнить от root команды:
 1) tail -f /var/log/messages
 2) systemctl status spawn-fcgi.service
