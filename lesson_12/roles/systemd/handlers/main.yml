@@ -1,0 +1,5 @@
+---
+- name: reload systemd
+  systemd:
+    name: systemd
+    state: reloaded

@@ -1,0 +1,38 @@
+---
+- name: copying files
+  become: true
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+   - { src: 'watchlog' , dest: '/etc/sysconfig' }
+   - { src: 'watchlog.log' , dest: '/var/log' }
+   - { src: 'watchlog.sh' , dest: '/opt' }
+   - { src: 'watchlog.service' , dest: '/etc/systemd/system' }
+   - { src: 'watchlog.timer' , dest: '/etc/systemd/system' }
+   - { src: 'watchlog' , dest: '/etc/sysconfig' }
+   - { src: 'spawn-fcgi' , dest: '/etc/sysconfig' }
+   - { src: 'spawn-fcgi.service' , dest: '/etc/systemd/system' }
+   - { src: 'httpd@.service' , dest: '/usr/lib/systemd/system/' }
+   - { src: 'httpd-first' , dest: '/etc/sysconfig' }
+   - { src: 'httpd-second' , dest: '/etc/sysconfig' }
+   - { src: 'first.conf' , dest: '/etc/httpd/conf' }
+   - { src: 'second.conf' , dest: '/etc/httpd/conf' }
+  tags:
+    - file-copy
+- name: set some permissions
+  ansible.builtin.file:
+    path: /opt/watchlog.sh
+    state: touch
+    mode: u+x,g+x,o+x
+
+- name: get systemd units running
+  ansible.builtin.systemd_service:
+    state: started
+    name: "{{ item }}"
+  with_items:
+    - watchlog.timer
+    - watchlog.service
+    - spawn-fcgi.service
+    - httpd@first
+    - httpd@second
