@@ -1,0 +1,84 @@
+---
+- hosts: all # running on all hosts
+  become: true
+  tasks:
+  - name: copy timezone
+    copy:
+      src: files/timezone
+      dest: /etc
+      owner: root
+      group: root
+      mode: 0644
+  - name: copy timesyncd.conf
+    copy:
+      src: files/timesyncd.conf
+      dest: /etc/systemd
+      owner: root
+      group: root
+      mode: 0644
+  - name: enable systemd-timesyncd.service
+    systemd: 
+      name: systemd-timesyncd.service
+      state: started
+      enabled: yes
+  - name: restart systemd-timesyncd.service
+    systemd:
+      name: systemd-timesyncd.service
+      state: restarted
+
+- hosts: web # server web provision
+  become: true
+  tasks:
+  - name: install packages 
+    apt:
+      name: "{{ packages }}"
+      state: latest
+      update_cache: yes
+    vars:
+      packages:
+      - nginx
+      - auditd
+  - name: copy nginx.conf
+    copy:
+      src: files/web/nginx.conf
+      dest: /etc/nginx
+      owner: root
+      group: root
+      mode: 0644
+  - name: copy rsyslog.conf
+    copy:
+      src: files/web/rsyslog.conf
+      dest: /etc
+      owner: root
+      group: root
+      mode: 0644
+  - name: copy auditd nginx.rules
+    copy:
+      src: files/web/nginx.rules
+      dest: /etc/audit/rules.d
+      owner: root
+      group: root
+      mode: 0640
+  - name: restart services
+    ansible.builtin.systemd_service:
+      name: "{{ item }}"
+      state: restarted
+    with_items:
+      - nginx
+      - auditd
+      - rsyslog
+
+- hosts: log # server rsyslog provision
+  become: true
+  tasks:
+  - name: copy rsyslog.conf
+    copy:
+      src: files/log/rsyslog.conf
+      dest: /etc
+      owner: root
+      group: root
+      mode: 0644
+  - name: restart rsyslog.service
+    systemd:
+      name: rsyslog.service
+      state: restarted

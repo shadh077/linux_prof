@@ -1,0 +1,2 @@
+# place it /etc/audit/rules.d/
+-w /etc/nginx/nginx.conf -p wa
