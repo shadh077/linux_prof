@@ -1,0 +1,79 @@
+---
+- hosts: all # running on all hosts
+  become: true
+  tasks:
+  - name: install packages 
+    apt:
+      name: "{{ packages }}"
+      state: latest
+      update_cache: yes
+    vars:
+      packages:
+      - borgbackup
+
+- hosts: backup # server backup provision
+  become: true
+  tasks:
+  - name: create partition
+    parted:
+      device: /dev/sdb
+      number: 1
+      flags: [ lvm ]
+      state: present
+      part_end: 2GB
+  - name: task for creating volume group
+    lvg:
+      vg: backup
+      pvs: /dev/sdb1
+  - name: create logical volume
+    lvol:
+      vg: backup
+      lv:  backup01
+      size: 100%FREE
+      force: yes
+  - name: Add the user 'borg'
+    ansible.builtin.user:
+      name: borg
+      password: '$6$IBGNPi0Om0URzM1p$YB4oalGBfbE1zuD76wDNTyMgs7rWELUKpIiGT.jUENEgdxbuAs/c.dRESdtALbFlHbYRcZKJIRcc5RDDql89b.'
+      comment: John Borg
+      shell: /bin/bash
+  - name: create directory for backups
+    ansible.builtin.file:
+      path: /var/backup
+      state: directory
+      mode: '0755'
+  - name: format the ext4 filesystem
+    filesystem:
+      fstype: ext4
+      dev: /dev/backup/backup01
+  - name: mount the lv on /var/backup
+    mount:
+      path: /var/backup
+      src: /dev/backup/backup01
+      fstype: ext4
+      state: mounted
+  - name: change ownership /var/backup
+    ansible.builtin.file:
+      path: /var/backup
+      owner: borg
+      group: borg
+  - name: remove dir inside /var/backup
+    ansible.builtin.file:
+      path: /var/backup/lost+found
+      state: absent
+
+- hosts: client # server client provision
+  become: true
+  tasks:
+  - name: Generate an OpenSSH keypair with the default values (4096 bits, rsa)
+    openssh_keypair:
+      path: /root/.ssh/id_rsa
+      owner: root
+      group: root
+  - name: copying files
+    ansible.builtin.copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+     - { src: 'files/borg-backup.service' , dest: '/etc/systemd/system' }
+     - { src: 'files/borg-backup.timer' , dest: '/etc/systemd/system/' }
