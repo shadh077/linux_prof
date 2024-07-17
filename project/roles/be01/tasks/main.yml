@@ -1,0 +1,102 @@
+---
+- name: set a hostname
+  ansible.builtin.hostname:
+    name: be01
+    use: debian
+- name: add lines to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: 192.168.56.12 be02 be02
+- name: set an ip address
+  template:
+    src: 50-vagrant.yaml
+    dest: /etc/netplan/50-vagrant.yaml 
+  notify:
+    - start netplan
+- name: install packages
+  apt:
+    name: "{{ packages }}"
+    state: latest
+    update_cache: yes
+  vars:
+      packages:
+#      - mysql-server-8.0
+      - python3-pymysql
+      - php8.1
+      - php8.1-curl
+      - php8.1-mysql
+      - php8.1-fpm
+      - php8.1-xml
+      - php8.1-zip
+      - php8.1-intl
+      - php8.1-mbstring
+- name: install nginx
+  apt:
+    name: nginx
+    state: latest
+  notify: restart nginx
+#- name: secure mysql
+#  expect:
+#    command: mysql_secure_installation
+#    responses:
+#      'Press y|Y for Yes, any other key for No': 'n'
+#      'Remove anonymous users': 'y'
+#      'Disallow root login remotely': 'y'
+#      'Remove test database and access to it': 'y'
+#      'Reload privilege tables now': 'y'
+#    timeout: 1
+#  register: secure_mysqldb
+#  failed_when: "'... Failed!' in secure_mysqldb.stdout_lines"
+#- name: create db
+#  mysql_db:
+#    login_unix_socket: /var/run/mysqld/mysqld.sock
+#    name: wpdb
+#    state: present
+#- name: create db user
+#  mysql_user:
+#    column_case_sensitive: true
+#    login_unix_socket: /var/run/mysqld/mysqld.sock
+#    name: wpuser
+#    password: password
+#    priv: 'wpdb.*:ALL'
+#    state: present
+- name: download and untar WP
+  ansible.builtin.unarchive:
+    src: http://wordpress.org/latest.tar.gz
+    dest: /var/www/html/
+    remote_src: yes
+- name: copy wp config
+  template:
+    src: wp-config.php
+    dest: /var/www/html/wordpress
+- name: set some perm
+  ansible.builtin.file:
+    path: /var/www/html/wordpress
+    owner: www-data
+    group: www-data
+- name: copy nginx config
+  template:
+    src: default
+    dest: /etc/nginx/sites-available/
+- name: copy ssl config
+  template:
+    src: ssl-params.conf
+    dest: /etc/nginx/snippets
+- name: copy dhparam file
+  template:
+    src: dhparam.pem
+    dest: /etc/ssl/
+- name: ssl private key
+  openssl_privatekey:
+    path: /etc/ssl/pvt.key
+    size: 2048
+- name: ssl crs file
+  openssl_csr:
+    path: /etc/ssl/server.csr
+    privatekey_path: /etc/ssl/pvt.key
+- name: ssl cert file
+  openssl_certificate:
+    provider: selfsigned
+    path: /etc/ssl/server.crt
+    privatekey_path: /etc/ssl/pvt.key
+    csr_path: /etc/ssl/server.csr

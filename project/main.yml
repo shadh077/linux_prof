@@ -1,0 +1,64 @@
+---
+- name: image config
+  hosts: image
+  become: true
+  roles:
+    - initial
+    - image
+  tags:
+    - image_config
+
+- name: fe config
+  hosts: fe
+  become: true
+  roles:
+    #- initial
+    - fe
+  tags:
+    - fe_config
+
+- name: be01 config
+  hosts: be01
+  become: true
+  roles:
+    - initial
+    - be01
+    - { role: mysql,
+               mysql_db: [{ name: wpdb }],
+               mysql_users: [{ name: wpuser, pass: password, priv: "wpdb.*:All" }],
+               mysql_repl_role: master,
+               mysql_db_id: 8
+              }
+  tags:
+    - be01_config
+- name: be02 config
+  hosts: be02
+  become: true
+  roles:
+    - initial
+    - be02
+    - { role: mysql,
+               mysql_db: [{ name: wpdb }],
+               mysql_users: none,
+               mysql_repl_role: slave,
+               mysql_repl_master: be01,
+               mysql_db_id: 9,
+               mysql_repl_user: [{ name: repl, pass: verystrong }] 
+              }
+  tags:
+    - be02_config
+
+- name: mon config
+  hosts: mon
+  become: true
+  roles:
+    - initial
+    - graylog
+    - { role: mysql,
+               mysql_db: [{ name: zabbix }],
+               mysql_users: [{ name: zabbix, pass: password, priv: "zabbix.*:All" }],
+               mysql_db_id: 7
+              }
+    - zabbix
+  tags:
+    - mon_config

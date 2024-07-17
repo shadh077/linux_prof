@@ -1,0 +1,25 @@
+[image]
+image ansible_host=127.0.0.1 ansible_port=2201
+
+[fe]
+fe ansible_host=127.0.0.1 ansible_port=2200
+
+[mon]
+mon ansible_host=127.0.0.1 ansible_port=2202
+
+[be01]
+be01 ansible_host=127.0.0.1 ansible_port=2222
+
+[be02]
+be02 ansible_host=127.0.0.1 ansible_port=2201
+
+[image:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/project/.vagrant/machines/image/virtualbox/private_key
+[fe:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/project/.vagrant/machines/fe/virtualbox/private_key
+[mon:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/project/.vagrant/machines/mon/virtualbox/private_key
+[be01:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/project/.vagrant/machines/be01/virtualbox/private_key
+[be02:vars]
+ansible_ssh_private_key_file=/home/shadh/linux_prof/project/.vagrant/machines/be02/virtualbox/private_key

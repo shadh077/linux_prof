@@ -1,0 +1,88 @@
+---
+- name: set a hostname
+  ansible.builtin.hostname:
+    name: fe
+    use: debian
+- name: set an ip address
+  template:
+    src: 50-vagrant.yaml
+    dest: /etc/netplan/50-vagrant.yaml 
+  notify:
+    - start netplan
+- name: Add line to /etc/hosts
+  lineinfile:
+    path: "/etc/hosts"
+    state: present
+    line: '{{ item }}'
+  with_items:
+    - '192.168.56.10 blog.local www.blog.local'
+    - '192.168.56.11 blog.int www.blog.int'
+- name: change zabbix agent2 config
+  lineinfile:
+    path: /etc/zabbix/zabbix_agent2.conf
+    search_string: 'image'
+    line: "{{ item }}"
+    backup: yes
+  with_items:
+   - "Hostname={{ ansible_hostname }}"
+  notify: restart zagent2
+- name: UFW - Allow SSH connections
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+- name: UFW Allow SSH connections
+  community.general.ufw:
+    rule: allow
+    port: 2200:2250
+    proto: tcp
+- name: Allow all access to tcp port 80
+  community.general.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+- name: Allow all access to tcp port 443
+  community.general.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+- name: Allow access to tcp zabbix port
+  community.general.ufw:
+    rule: allow
+    port: '10051'
+    proto: tcp
+- name: UFW - Enable and deny by default
+  community.general.ufw:
+    state: enabled
+    default: deny
+- name: install package
+  apt:
+    name: nginx
+    state: latest
+    update_cache: yes
+- name: copy nginx config
+  template:
+    src: default
+    dest: /etc/nginx/sites-available/
+- name: copy ssl config
+  template:
+    src: ssl-params.conf
+    dest: /etc/nginx/snippets
+- name: copy dhparam file
+  template:
+    src: dhparam.pem
+    dest: /etc/ssl/
+- name: ssl private key
+  openssl_privatekey:
+    path: /etc/ssl/pvt.key
+    size: 2048
+- name: ssl crs file
+  openssl_csr:
+    path: /etc/ssl/server.csr
+    privatekey_path: /etc/ssl/pvt.key
+- name: ssl cert file
+  openssl_certificate:
+    provider: selfsigned
+    path: /etc/ssl/server.crt
+    privatekey_path: /etc/ssl/pvt.key
+    csr_path: /etc/ssl/server.csr
+  notify: restart nginx

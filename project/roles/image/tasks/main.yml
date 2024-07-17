@@ -1,0 +1,25 @@
+---
+- name: install packages
+  apt:
+    name: "{{ packages }}"
+    state: latest
+    update_cache: yes
+  vars:
+      packages:
+      - nginx
+      - mysql-server-8.0
+      - python3-mysqldb
+      - python3-pymysql
+      - php8.1
+      - php8.1-curl
+      - php8.1-mysql
+      - php8.1-fpm
+      - php8.1-xml
+      - php8.1-zip
+      - php8.1-intl
+      - php8.1-mbstring
+      - zabbix-server-mysql
+      - zabbix-frontend-php
+      - zabbix-nginx-conf
+      - zabbix-sql-scripts
+

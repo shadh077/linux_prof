@@ -1,0 +1,48 @@
+---
+- name: change timezone
+  ansible.builtin.shell: timedatectl set-timezone Asia/Yekaterinburg 
+- name: make sure timesyncd is running
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    state: started
+    enabled: true
+- name: add zabbix repository
+  apt:
+    deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-1+ubuntu22.04_all.deb
+    update_cache: true
+    state: present
+- name: install zabbix package
+  apt:
+    update_cache: true
+    name: "{{ packages }}"
+    state: present
+  vars:
+      packages:
+      - zabbix-agent2
+      - zabbix-agent2-plugin-*
+- name: copy zabbix agent2 config
+  template:
+    src: zabbix_agent2.conf
+    dest: /etc/zabbix/zabbix_agent2.conf
+- name: change zabbix agent2 config
+  lineinfile:
+    path: /etc/zabbix/zabbix_agent2.conf
+    search_string: 'changeme'
+    line: "{{ item }}"
+    backup: yes
+  with_items:
+   - "Hostname={{ ansible_hostname }}"
+    #owner: root
+    #group: root
+    #mode: 0644
+- name: copy rsyslog for graylog config
+  template:
+    src: 60-graylog.conf
+    dest: /etc/rsyslog.d/60-graylog.conf
+  notify:
+    - restart rsyslog
+- name: start zabbix agent2 service
+  ansible.builtin.service:
+    name: zabbix-agent2.service
+    state: started
+    enabled: true

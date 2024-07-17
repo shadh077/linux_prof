@@ -1,0 +1,26 @@
+---
+- name: set a hostname
+  ansible.builtin.hostname:
+    name: be02
+    use: debian
+- name: add lines to /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: 192.168.56.11 be01 be01
+- name: set an ip address
+  template:
+    src: 50-vagrant.yaml
+    dest: /etc/netplan/50-vagrant.yaml 
+  notify:
+    - start netplan
+- name: change zabbix agent2 config
+  lineinfile:
+    path: /etc/zabbix/zabbix_agent2.conf
+    search_string: 'image'
+    line: "{{ item }}"
+    backup: yes
+  with_items:
+   - "Hostname={{ ansible_hostname }}"
+  notify: restart zagent2
+
+

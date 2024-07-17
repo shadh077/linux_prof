@@ -1,0 +1,32 @@
+---
+- name: get zabbix package
+  apt:
+    deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-1+ubuntu22.04_all.deb
+    update_cache: true
+    state: present
+- name: install zabbix package
+  apt:
+    update_cache: true
+    name: "{{ packages }}"
+    state: present
+  vars:
+      packages:
+      - zabbix-server-mysql
+      - zabbix-frontend-php
+      - zabbix-nginx-conf
+      - zabbix-sql-scripts
+      - zabbix-agent
+- name: check that the sql dump exists
+  stat:
+      path: /usr/share/zabbix-sql-scripts/mysql/server.sql.gz
+  register: stat_result
+- name: unpack sql dump if compress
+  command: gzip -d /usr/share/zabbix-sql-scripts/mysql/server.sql.gz
+  when: stat_result.stat.exists
+- name: insert sample data into database
+  mysql_db:
+      name: zabbix
+      state: import
+      target: /usr/share/zabbix-sql-scripts/mysql/server.sql
+      #login_user: zabbix
+      #login_password: zabbix

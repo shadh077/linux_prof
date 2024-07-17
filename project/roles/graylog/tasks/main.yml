@@ -1,0 +1,68 @@
+---
+- name: add mongodb key
+  get_url:
+    url:  https://pgp.mongodb.com/server-6.0.asc
+    dest: /etc/apt/trusted.gpg.d/server-6.0.asc
+
+- name:  add mongodb repository
+  apt_repository:
+    repo:  "deb [ arch=amd64,arm64 signed-by=/etc/apt/trusted.gpg.d/server-6.0.asc ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse"
+    state: present
+    update_cache: yes
+- name: "install mongodb package"
+  apt:
+      name: "mongodb-org"
+      update_cache: true
+      state: present
+
+- name: start mongodb service
+  ansible.builtin.service:
+    name: mongod.service
+    state: started
+    enabled: true
+
+- name: add opensearch key
+  get_url:
+    url:  https://artifacts.opensearch.org/publickeys/opensearch.pgp
+    dest: /etc/apt/trusted.gpg.d/opensearch.pgp
+
+- name: add opensearch repository
+  apt_repository:
+    repo:  "deb [signed-by=/etc/apt/trusted.gpg.d/opensearch.pgp] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main"
+    state: present
+    update_cache: yes
+- name: install opensearch
+  ansible.builtin.package:
+        name: opensearch
+        state: present
+  environment:
+        OPENSEARCH_INITIAL_ADMIN_PASSWORD: "5%Pqw4Linux"
+- name: copy opensearch config
+  template:
+    src: opensearch.yml
+    dest: /etc/opensearch/opensearch.yml
+- name: start opensearch service
+  ansible.builtin.service:
+    name: opensearch.service
+    state: started
+    enabled: true
+
+- name: get graylog package
+  apt:
+    deb: https://packages.graylog2.org/repo/packages/graylog-5.2-repository_latest.deb
+    update_cache: true
+    state: present
+- name: install graylog package
+  apt:
+    update_cache: true
+    name: "graylog-server"
+    state: present
+- name: copy graylog config
+  template:
+    src: server.conf
+    dest: /etc/graylog/server/server.conf
+- name: start graylog service
+  ansible.builtin.service:
+    name: graylog-server.service
+    state: started
+    enabled: true
